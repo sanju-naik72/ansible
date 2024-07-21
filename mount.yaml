@@ -2,6 +2,7 @@
 - name: Setup LVM and mount file systems dynamically
   hosts: localhost
   become: yes
+  become_user: ec2-user
   vars_files:
     - ./var.yaml
 
