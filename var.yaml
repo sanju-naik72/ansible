@@ -1,6 +1,6 @@
 ---
 pv_devices:
-  - /dev/xvdc
+  - /dev/xvdb
 
 lvs:
   - name: data1
