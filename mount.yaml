@@ -9,7 +9,7 @@
 
 
     - name: Ensure physical volumes are created
-      command: "pvcreate {{ item }}"
+      command: "sudo pvcreate {{ item }}"
       loop: "{{ pv_devices }}"
       tags: lvm
 
