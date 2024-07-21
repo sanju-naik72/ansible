@@ -57,9 +57,7 @@
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
-      filesystem:
-        fstype: xfs
-        dev: "/dev/{{ vg_name }}/{{ item.name }}"
+      command: "mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
       when: lv_create.rc == 0
       tags: filesystem
