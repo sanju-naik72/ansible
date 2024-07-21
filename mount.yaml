@@ -13,7 +13,7 @@
 
     - name: Ensure physical volumes are created
       command: "pvcreate -ff {{ item }}"
-      with_items: "{{ pv_devices }}"
+      loop: "{{ pv_devices }}"
       tags: lvm
 
     - name: Check if volume group exists
@@ -47,7 +47,7 @@
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
-      filesystem:
+      community.general.filesystem:
         fstype: xfs
         dev: "/dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
