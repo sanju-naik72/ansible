@@ -1,7 +1,68 @@
 ---
-- name: Test sudo command execution
+- name: Setup LVM and mount file systems dynamically
   hosts: localhost
   become: yes
+  vars_files:
+    - ./var.yaml
+  environment:
+    PATH: "/usr/sbin:/usr/bin:/bin"
+
   tasks:
-    - name: Test sudo command
-      command: pvcreate --version
+    - name: Ensure physical volumes are created
+      command: pvcreate -ff {{ item }}
+      loop: "{{ pv_devices }}"
+      tags: lvm
+
+    - name: Check if volume group exists
+      command: /usr/sbin/vgs {{ vg_name }} --noheadings --options vg_name
+      register: vg_check
+      ignore_errors: yes
+      tags: lvm
+
+    - name: Create volume group if not exists
+      command: /usr/sbin/vgcreate {{ vg_name }} {{ pv_devices | join(' ') }}
+      when: vg_check.rc != 0
+      tags: lvm
+
+    - name: Extend volume group if it already exists
+      command: /usr/sbin/vgextend {{ vg_name }} {{ pv_devices | join(' ') }}
+      when: vg_check.rc == 0
+      tags: lvm
+
+    - name: Ensure logical volumes are created
+      command: /usr/sbin/lvcreate -n {{ item.name }} -L {{ item.size }} {{ vg_name }}
+      loop: "{{ lvs }}"
+      register: lv_create
+      ignore_errors: yes
+      tags: lvm
+
+    - name: Check logical volume creation status
+      debug:
+        msg: "Failed to create logical volume {{ item.name }}. Check the available space in the volume group."
+      when: lv_create.failed
+      loop: "{{ lvs }}"
+      tags: lvm
+
+    - name: Ensure logical volumes are formatted with XFS
+      command: /sbin/mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}
+      loop: "{{ lvs }}"
+      when: lv_create.rc == 0
+      tags: filesystem
+
+    - name: Ensure mount point directories exist
+      file:
+        path: "{{ item.mount_point }}"
+        state: directory
+      loop: "{{ lvs }}"
+      tags: mount
+
+    - name: Mount logical volumes
+      mount:
+        path: "{{ item.mount_point }}"
+        src: "/dev/{{ vg_name }}/{{ item.name }}"
+        fstype: xfs
+        opts: defaults
+        state: mounted
+      loop: "{{ lvs }}"
+      when: lv_create.rc == 0
+      tags: mount
