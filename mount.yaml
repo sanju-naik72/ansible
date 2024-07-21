@@ -6,10 +6,6 @@
     - ./var.yaml
 
   tasks:
-    - name: Install LVM2 package
-      yum:
-        name: lvm2
-        state: present
 
     - name: Ensure physical volumes are created
       command: "/usr/sbin/pvcreate -ff {{ item }}"
