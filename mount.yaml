@@ -1,67 +1,84 @@
 ---
-- name: Setup LVM and mount file systems dynamically
+- name: Gather system information from localhost
   hosts: localhost
-  vars_files:
-    - ./var.yaml
-  environment:
-    PATH: "/usr/sbin:/usr/bin:/bin"
-
+  become: yes
   tasks:
-    - name: Ensure physical volumes are created
-      command: pvcreate -ff {{ item }}
-      loop: "{{ pv_devices }}"
-      tags: lvm
+    - name: Get hostname
+      command: hostname
+      register: hostname_result
 
-    - name: Check if volume group exists
-      command: /usr/sbin/vgs {{ vg_name }} --noheadings --options vg_name
-      register: vg_check
-      ignore_errors: yes
-      tags: lvm
-
-    - name: Create volume group if not exists
-      command: /usr/sbin/vgcreate {{ vg_name }} {{ pv_devices | join(' ') }}
-      when: vg_check.rc != 0
-      tags: lvm
-
-    - name: Extend volume group if it already exists
-      command: /usr/sbin/vgextend {{ vg_name }} {{ pv_devices | join(' ') }}
-      when: vg_check.rc == 0
-      tags: lvm
-
-    - name: Ensure logical volumes are created
-      command: /usr/sbin/lvcreate -n {{ item.name }} -L {{ item.size }} {{ vg_name }}
-      loop: "{{ lvs }}"
-      register: lv_create
-      ignore_errors: yes
-      tags: lvm
-
-    - name: Check logical volume creation status
+    - name: Print hostname
       debug:
-        msg: "Failed to create logical volume {{ item.name }}. Check the available space in the volume group."
-      when: lv_create.failed
-      loop: "{{ lvs }}"
-      tags: lvm
+        msg: "Hostname: {{ hostname_result.stdout }}"
 
-    - name: Ensure logical volumes are formatted with XFS
-      command: /sbin/mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}
-      loop: "{{ lvs }}"
-      when: lv_create.rc == 0
-      tags: filesystem
+    - name: Get IP addresses
+      command: hostname -I
+      register: ip_result
 
-    - name: Ensure mount point directories exist
-      file:
-        path: "{{ item.mount_point }}"
-        state: directory
-      loop: "{{ lvs }}"
-      tags: mount
+    - name: Print IP addresses
+      debug:
+        msg: "IP addresses: {{ ip_result.stdout }}"
 
-    - name: Mount logical volumes
-      mount:
-        path: "{{ item.mount_point }}"
-        src: "/dev/{{ vg_name }}/{{ item.name }}"
-        fstype: xfs
-        opts: defaults
-        state: mounted
-      loop: "{{ lvs }}"
-      when: lv_create.rc == 0
-      tags: mount
+    - name: Get system information
+      command: uname -a
+      register: uname_result
+
+    - name: Print system information
+      debug:
+        msg: "System info: {{ uname_result.stdout }}"
+
+    - name: Get OS release info
+      command: cat /etc/os-release
+      register: os_release_result
+
+    - name: Print OS release info
+      debug:
+        msg: "OS Release Info: {{ os_release_result.stdout }}"
+
+    - name: Get memory usage
+      command: free -h
+      register: free_result
+
+    - name: Print memory usage
+      debug:
+        msg: "Memory usage: {{ free_result.stdout }}"
+
+    - name: Get disk usage
+      command: df -h
+      register: df_result
+
+    - name: Print disk usage
+      debug:
+        msg: "Disk usage: {{ df_result.stdout }}"
+
+    - name: Get CPU info
+      command: lscpu
+      register: lscpu_result
+
+    - name: Print CPU info
+      debug:
+        msg: "CPU info: {{ lscpu_result.stdout }}"
+
+    - name: Get network configuration
+      command: ip a
+      register: ip_a_result
+
+    - name: Print network configuration
+      debug:
+        msg: "Network configuration: {{ ip_a_result.stdout }}"
+
+    - name: Get routing table
+      command: ip route
+      register: ip_route_result
+
+    - name: Print routing table
+      debug:
+        msg: "Routing table: {{ ip_route_result.stdout }}"
+
+    - name: Get system uptime
+      command: uptime
+      register: uptime_result
+
+    - name: Print system uptime
+      debug:
+        msg: "System uptime: {{ uptime_result.stdout }}"
