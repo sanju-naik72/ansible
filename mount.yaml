@@ -6,45 +6,32 @@
     - ./var.yaml
 
   tasks:
+    - name: Install LVM2 package
+      yum:
+        name: lvm2
+        state: present
+
     - name: Ensure physical volumes are created
-      shell: "/usr/sbin/pvcreate -ff {{ item }}"
-      loop: "{{ pv_devices }}"
-      tags: lvm
-
-    - name: Check if volume group exists
-      shell: "/usr/sbin/vgs {{ vg_name }} --noheadings --options vg_name"
-      register: vg_check
-      ignore_errors: yes
-      tags: lvm
-
-    - name: Create volume group if not exists
-      shell: "/usr/sbin/vgcreate {{ vg_name }} {{ pv_devices | join(' ') }}"
-      when: vg_check.rc != 0
-      tags: lvm
-
-    - name: Extend volume group if it already exists
-      shell: "/usr/sbin/vgextend {{ vg_name }} {{ pv_devices | join(' ') }}"
-      when: vg_check.rc == 0
+      lvg:
+        pvs: "{{ pv_devices }}"
+        vg: "{{ vg_name }}"
       tags: lvm
 
     - name: Ensure logical volumes are created
-      shell: "/usr/sbin/lvcreate -n {{ item.name }} -L {{ item.size }} {{ vg_name }}"
+      lvol:
+        vg: "{{ vg_name }}"
+        lv: "{{ item.name }}"
+        size: "{{ item.size }}"
       loop: "{{ lvs }}"
       register: lv_create
-      ignore_errors: yes
-      tags: lvm
-
-    - name: Check logical volume creation status
-      debug:
-        msg: "Failed to create logical volume {{ item.name }}. Check the available space in the volume group."
-      when: lv_create.failed
-      loop: "{{ lvs }}"
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
-      shell: "/usr/sbin/mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}"
+      filesystem:
+        fstype: xfs
+        dev: "/dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
-      when: lv_create.rc == 0
+      when: lv_create is success
       tags: filesystem
 
     - name: Ensure mount point directories exist
@@ -62,5 +49,5 @@
         opts: defaults
         state: mounted
       loop: "{{ lvs }}"
-      when: lv_create.rc == 0
+      when: lv_create is success
       tags: mount
