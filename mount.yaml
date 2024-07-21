@@ -17,11 +17,6 @@
       ignore_errors: yes
       tags: lvm
 
-    - name: Wipe existing filesystem signatures
-      command: "wipefs -a {{ item }}"
-      with_items: "{{ pv_devices }}"
-      tags: lvm
-
     - name: Ensure physical volumes are created
       command: "pvcreate -y -ff {{ item }}"
       with_items: "{{ pv_devices }}"
