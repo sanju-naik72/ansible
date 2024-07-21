@@ -1,6 +1,7 @@
 ---
 - name: Setup LVM and mount file systems dynamically
   hosts: localhost
+  become: yes
   vars_files:
     - ./var.yaml
 
