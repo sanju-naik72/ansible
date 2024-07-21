@@ -4,4 +4,4 @@
   become: yes
   tasks:
     - name: Test sudo command
-      command: whoami
+      command: pvcreate --version
