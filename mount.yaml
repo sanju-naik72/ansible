@@ -47,7 +47,7 @@
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
-      community.general.filesystem:
+      filesystem:
         fstype: xfs
         dev: "/dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
