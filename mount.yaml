@@ -1,10 +1,9 @@
 ---
 - name: Setup LVM and mount file systems dynamically
-  hosts: localhost
+  hosts: local
   become: yes
   vars_files:
     - ./var.yaml
-
   tasks:
     - name: Install LVM2 package
       yum:
