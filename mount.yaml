@@ -2,20 +2,14 @@
 - name: Setup LVM and mount file systems dynamically
   hosts: localhost
   become: yes
-  vars:
-    pv_devices:
-      - /dev/sdb
-      - /dev/sdc
-    vg_name: vg0
-    lvs:
-      - name: lv_apps
-        size: 5G
-        mount_point: /mnt/apps
-      - name: lv_sanju
-        size: 5G
-        mount_point: /mnt/sanju
+  vars_files:
+    - ./var.yaml
 
   tasks:
+    - name: Install LVM2 package
+      yum:
+        name: lvm2
+        state: present
 
     - name: Ensure physical volumes are created
       command: "pvcreate -ff {{ item }}"
@@ -53,7 +47,9 @@
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
-      command: "mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}"
+      filesystem:
+        fstype: xfs
+        dev: "/dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
       when: lv_create.rc == 0
       tags: filesystem
