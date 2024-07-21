@@ -12,7 +12,7 @@
         state: present
 
     - name: Ensure physical volumes are created
-      command: "pvcreate -ff {{ item }}"
+      command: "pvcreate -y -ff {{ item }}"
       with_items: "{{ pv_devices }}"
       tags: lvm
 
