@@ -35,15 +35,8 @@
     - name: Ensure logical volumes are created
       command: "lvcreate -n {{ item.name }} -L {{ item.size }} {{ vg_name }}"
       loop: "{{ lvs }}"
-      register: lv_create
+      register: lv_create_results
       ignore_errors: yes
-      tags: lvm
-
-    - name: Check logical volume creation status
-      debug:
-        msg: "Failed to create logical volume {{ item.name }}. Check the available space in the volume group."
-      when: lv_create.failed
-      loop: "{{ lvs }}"
       tags: lvm
 
     - name: Ensure logical volumes are formatted with XFS
@@ -51,7 +44,10 @@
         fstype: xfs
         dev: "/dev/{{ vg_name }}/{{ item.name }}"
       loop: "{{ lvs }}"
-      when: lv_create.rc == 0
+      when: "item.rc == 0"
+      loop_control:
+        loop_var: lv_item
+      register: filesystem_results
       tags: filesystem
 
     - name: Ensure mount point directories exist
@@ -69,5 +65,7 @@
         opts: defaults
         state: mounted
       loop: "{{ lvs }}"
-      when: lv_create.rc == 0
+      when: "item.rc == 0"
+      loop_control:
+        loop_var: lv_item
       tags: mount
