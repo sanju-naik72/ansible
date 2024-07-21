@@ -1,5 +1,5 @@
 pv_devices:
-  - /dev/sdb
+  - /dev/xvdb
 
 vg_name: vg0
 
