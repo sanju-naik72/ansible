@@ -10,8 +10,8 @@
   tasks:
     - name: Ensure physical volumes are created
       command: pvcreate -ff {{ item }}
-      become: yes
       loop: "{{ pv_devices }}"
+      ignore_errors: yes
       tags: lvm
 
     - name: Check if volume group exists
