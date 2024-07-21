@@ -1,0 +1,17 @@
+---
+pv_devices:
+  - /dev/xvdc
+
+lvs:
+  - name: data1
+    size: 10G
+    mount_point: /mnt/data1
+    fstype: xfs
+  - name: apps
+    size: 5G
+    mount_point: /apps
+    fstype: xfs
+  - name: sanju
+    size: 5G
+    mount_point: /sanju
+    fstype: xfs
