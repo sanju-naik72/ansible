@@ -2,8 +2,18 @@
 - name: Setup LVM and mount file systems dynamically
   hosts: localhost
   become: yes
-  vars_files:
-    - ./var.yaml
+  vars:
+    pv_devices:
+      - /dev/sdb
+      - /dev/sdc
+    vg_name: vg0
+    lvs:
+      - name: lv_apps
+        size: 5G
+        mount_point: /mnt/apps
+      - name: lv_sanju
+        size: 5G
+        mount_point: /mnt/sanju
 
   tasks:
     - name: Install LVM2 package
