@@ -1,7 +1,7 @@
 ---
 pv_devices:
   - /dev/xvdb
-
+vg_name: my_volume_group-1
 lvs:
   - name: data1
     size: 10G
