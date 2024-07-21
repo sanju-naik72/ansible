@@ -7,30 +7,46 @@
 
   tasks:
 
+
     - name: Ensure physical volumes are created
-      community.general.lvg:
-        pvs: "{{ pv_devices }}"
-        vg: "{{ vg_name }}"
-        state: present
+      command: "pvcreate -ff {{ item }}"
+      loop: "{{ pv_devices }}"
+      tags: lvm
+
+    - name: Check if volume group exists
+      command: "vgs {{ vg_name }} --noheadings --options vg_name"
+      register: vg_check
+      ignore_errors: yes
+      tags: lvm
+
+    - name: Create volume group if not exists
+      command: "vgcreate {{ vg_name }} {{ pv_devices | join(' ') }}"
+      when: vg_check.rc != 0
+      tags: lvm
+
+    - name: Extend volume group if it already exists
+      command: "vgextend {{ vg_name }} {{ pv_devices | join(' ') }}"
+      when: vg_check.rc == 0
       tags: lvm
 
     - name: Ensure logical volumes are created
-      community.general.lvol:
-        vg: "{{ vg_name }}"
-        lv: "{{ item.name }}"
-        size: "{{ item.size }}"
-        state: present
+      command: "lvcreate -n {{ item.name }} -L {{ item.size }} {{ vg_name }}"
       loop: "{{ lvs }}"
       register: lv_create
       ignore_errors: yes
       tags: lvm
 
-    - name: Ensure logical volumes are formatted with XFS
-      filesystem:
-        fstype: xfs
-        dev: "/dev/{{ vg_name }}/{{ item.name }}"
+    - name: Check logical volume creation status
+      debug:
+        msg: "Failed to create logical volume {{ item.name }}. Check the available space in the volume group."
+      when: lv_create.failed
       loop: "{{ lvs }}"
-      when: lv_create is success
+      tags: lvm
+
+    - name: Ensure logical volumes are formatted with XFS
+      command: "mkfs.xfs /dev/{{ vg_name }}/{{ item.name }}"
+      loop: "{{ lvs }}"
+      when: lv_create.rc == 0
       tags: filesystem
 
     - name: Ensure mount point directories exist
@@ -48,5 +64,5 @@
         opts: defaults
         state: mounted
       loop: "{{ lvs }}"
-      when: lv_create is success
+      when: lv_create.rc == 0
       tags: mount
