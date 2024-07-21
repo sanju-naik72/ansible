@@ -8,7 +8,7 @@
   tasks:
 
     - name: Ensure physical volumes are created
-      shell: /usr/sbin/pvcreate -ff {{ item }}
+      shell: pvcreate -ff {{ item }}
       loop: "{{ pv_devices }}"
       become: yes
       tags: lvm
